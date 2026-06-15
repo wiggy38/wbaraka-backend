@@ -1,0 +1,1474 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Baraka API",
+        "description": "API backend pour la plateforme Baraka de microcrédit",
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "http://localhost/baraka-backend/public",
+            "description": "Serveur local"
+        }
+    ],
+    "paths": {
+        "/api/v1/admin/dashboard": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Tableau de bord de l'administration",
+                "operationId": "ce3e98c0785904b9a48bc90280eceb7c",
+                "responses": {
+                    "200": {
+                        "description": "Données du tableau de bord admin"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/moderation/offres": {
+            "get": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Liste paginée des offres en attente de validation",
+                "operationId": "37cced690c17ce680e935b0449b179b3",
+                "parameters": [
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Liste des offres en_validation"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/moderation/offres/{id}/approuver": {
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Approuver une offre (passe en statut actif)",
+                "operationId": "573c9b9ead5afcbed2a7d75690a3d22e",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Offre approuvée"
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    },
+                    "422": {
+                        "description": "L'offre n'est pas en attente de validation"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/moderation/offres/{id}/rejeter": {
+            "post": {
+                "tags": [
+                    "Admin"
+                ],
+                "summary": "Rejeter une offre (repasse en brouillon avec motif)",
+                "operationId": "6135375e59791dbf61efc9ccbcd7bb00",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "motif"
+                                ],
+                                "properties": {
+                                    "motif": {
+                                        "type": "string",
+                                        "maxLength": 1000,
+                                        "minLength": 10
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Offre rejetée"
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    },
+                    "422": {
+                        "description": "L'offre n'est pas en attente de validation ou motif manquant"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/imfs": {
+            "get": {
+                "tags": [
+                    "Admin - IMFs"
+                ],
+                "summary": "Liste paginée des IMFs, filtrable par statut",
+                "operationId": "91e8c5769244501609f77f3e8e1722ec",
+                "parameters": [
+                    {
+                        "name": "statut",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "actif",
+                                "suspendu"
+                            ]
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Liste des IMFs"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Admin - IMFs"
+                ],
+                "summary": "Créer une IMF et son premier agent admin_imf",
+                "operationId": "a0c16c220c52d469f11fc85bb508ca95",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nom",
+                                    "email_contact",
+                                    "zones_couverture",
+                                    "agent_nom",
+                                    "agent_email",
+                                    "agent_password"
+                                ],
+                                "properties": {
+                                    "nom": {
+                                        "type": "string"
+                                    },
+                                    "email_contact": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "telephone": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "description": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "zones_couverture": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "logo_url": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "agent_nom": {
+                                        "type": "string"
+                                    },
+                                    "agent_email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "agent_password": {
+                                        "type": "string",
+                                        "minLength": 8
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "IMF créée"
+                    },
+                    "422": {
+                        "description": "Données invalides"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/imfs/{id}/suspendre": {
+            "put": {
+                "tags": [
+                    "Admin - IMFs"
+                ],
+                "summary": "Suspendre une IMF et dépublier toutes ses offres actives",
+                "operationId": "f07cec6fc6a9fe28873c3899b848889b",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IMF suspendue"
+                    },
+                    "404": {
+                        "description": "IMF introuvable"
+                    },
+                    "422": {
+                        "description": "L'IMF est déjà suspendue"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/imfs/{id}/reactiver": {
+            "put": {
+                "tags": [
+                    "Admin - IMFs"
+                ],
+                "summary": "Réactiver une IMF suspendue",
+                "operationId": "9453d4aadaee414ed1d1bb4b709b9de7",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IMF réactivée"
+                    },
+                    "404": {
+                        "description": "IMF introuvable"
+                    },
+                    "422": {
+                        "description": "L'IMF est déjà active"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/imfs/{id}": {
+            "delete": {
+                "tags": [
+                    "Admin - IMFs"
+                ],
+                "summary": "Supprimer (soft delete) une IMF — super_admin uniquement",
+                "operationId": "4a8a26677a661be424f5a7c297428217",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "IMF supprimée"
+                    },
+                    "403": {
+                        "description": "Réservé au super_admin"
+                    },
+                    "404": {
+                        "description": "IMF introuvable"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/journal": {
+            "get": {
+                "tags": [
+                    "Admin - Journal"
+                ],
+                "summary": "Liste paginée du journal d'administration — super_admin uniquement",
+                "operationId": "29294efba1b985e984d20ddaba46fb5d",
+                "parameters": [
+                    {
+                        "name": "id_admin",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    },
+                    {
+                        "name": "action",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    },
+                    {
+                        "name": "per_page",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "integer",
+                            "default": 20
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Journal des actions admin"
+                    },
+                    "403": {
+                        "description": "Réservé au super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/slider": {
+            "get": {
+                "tags": [
+                    "Admin - Slider"
+                ],
+                "summary": "Liste des slides du carousel — super_admin uniquement",
+                "operationId": "aede8045a406cde10ace22508e8b3da9",
+                "responses": {
+                    "200": {
+                        "description": "Liste des 3 slides"
+                    },
+                    "403": {
+                        "description": "Réservé au super_admin"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/admin/slider/{id}": {
+            "put": {
+                "tags": [
+                    "Admin - Slider"
+                ],
+                "summary": "Mettre à jour un slide — super_admin uniquement",
+                "operationId": "cc128be79f684b8015ef261e2e07afd8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "ordre": {
+                                        "type": "integer",
+                                        "maximum": 3,
+                                        "minimum": 1
+                                    },
+                                    "image_url": {
+                                        "type": "string"
+                                    },
+                                    "titre": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "lien": {
+                                        "type": "string",
+                                        "nullable": true
+                                    },
+                                    "actif": {
+                                        "type": "boolean"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Slide mis à jour"
+                    },
+                    "403": {
+                        "description": "Réservé au super_admin"
+                    },
+                    "404": {
+                        "description": "Slide introuvable"
+                    },
+                    "422": {
+                        "description": "Données invalides"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/otp/request": {
+            "post": {
+                "tags": [
+                    "Authentification"
+                ],
+                "summary": "Demander un OTP par SMS",
+                "operationId": "6e74ccbaecf96c72cdb4b860b7118062",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "telephone"
+                                ],
+                                "properties": {
+                                    "telephone": {
+                                        "type": "string",
+                                        "example": "+22370000000"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "OTP envoyé avec succès",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Données invalides"
+                    }
+                }
+            }
+        },
+        "/api/auth/otp/verify": {
+            "post": {
+                "tags": [
+                    "Authentification"
+                ],
+                "summary": "Vérifier l'OTP et obtenir un token JWT",
+                "operationId": "1b1c3480978f35a7bb0eee7fe8aa3bb8",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "telephone",
+                                    "code"
+                                ],
+                                "properties": {
+                                    "telephone": {
+                                        "type": "string",
+                                        "example": "+22370000000"
+                                    },
+                                    "code": {
+                                        "type": "string",
+                                        "example": "123456"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token JWT retourné",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string",
+                                                    "example": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9..."
+                                                },
+                                                "user": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Code invalide ou expiré",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": false
+                                        },
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Code invalide ou expiré."
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/offres": {
+            "get": {
+                "tags": [
+                    "Offres"
+                ],
+                "summary": "Lister les offres (paginées)",
+                "operationId": "f3cff18319f140d35cd2d76c6fae0842",
+                "parameters": [
+                    {
+                        "name": "id_imf",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "statut",
+                        "in": "query",
+                        "required": false,
+                        "schema": {
+                            "type": "string",
+                            "enum": [
+                                "brouillon",
+                                "publié",
+                                "archivé"
+                            ]
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Liste paginée des offres"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Offres"
+                ],
+                "summary": "Créer une nouvelle offre",
+                "operationId": "4680b58f335cc0c67ba3dae9e6ae621c",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "nom_produit",
+                                    "taux_interet_mensuel",
+                                    "montant_min",
+                                    "montant_max",
+                                    "duree_min_mois",
+                                    "duree_max_mois",
+                                    "garantie_requise",
+                                    "delai_traitement_jours",
+                                    "zones_couverture"
+                                ],
+                                "properties": {
+                                    "nom_produit": {
+                                        "type": "string",
+                                        "example": "Crédit PME"
+                                    },
+                                    "taux_interet_mensuel": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.5
+                                    },
+                                    "montant_min": {
+                                        "type": "integer",
+                                        "example": 50000
+                                    },
+                                    "montant_max": {
+                                        "type": "integer",
+                                        "example": 5000000
+                                    },
+                                    "duree_min_mois": {
+                                        "type": "integer",
+                                        "example": 3
+                                    },
+                                    "duree_max_mois": {
+                                        "type": "integer",
+                                        "example": 24
+                                    },
+                                    "frais_dossier": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 5000,
+                                        "nullable": true
+                                    },
+                                    "assurance": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 1000,
+                                        "nullable": true
+                                    },
+                                    "garantie_requise": {
+                                        "type": "string",
+                                        "example": "caution",
+                                        "enum": [
+                                            "aucune",
+                                            "caution",
+                                            "neant",
+                                            "bien"
+                                        ]
+                                    },
+                                    "delai_traitement_jours": {
+                                        "type": "integer",
+                                        "example": 7
+                                    },
+                                    "cible_specifique": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "femmes",
+                                            "jeunes"
+                                        ],
+                                        "nullable": true
+                                    },
+                                    "zones_couverture": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "example": [
+                                            "Bamako",
+                                            "Kayes"
+                                        ]
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Offre créée"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    },
+                    "422": {
+                        "description": "Données invalides"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/offres/{id}": {
+            "get": {
+                "tags": [
+                    "Offres"
+                ],
+                "summary": "Afficher une offre",
+                "operationId": "feb7d129e709e5e262a0782ca6b51880",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Détails de l'offre"
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Offres"
+                ],
+                "summary": "Mettre à jour une offre",
+                "operationId": "6fc392289d843c052ec55ebb0f622536",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "nom_produit": {
+                                        "type": "string"
+                                    },
+                                    "taux_interet_mensuel": {
+                                        "type": "number",
+                                        "format": "float"
+                                    },
+                                    "montant_min": {
+                                        "type": "integer"
+                                    },
+                                    "montant_max": {
+                                        "type": "integer"
+                                    },
+                                    "duree_min_mois": {
+                                        "type": "integer"
+                                    },
+                                    "duree_max_mois": {
+                                        "type": "integer"
+                                    },
+                                    "frais_dossier": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "assurance": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "garantie_requise": {
+                                        "type": "string",
+                                        "enum": [
+                                            "aucune",
+                                            "caution",
+                                            "neant",
+                                            "bien"
+                                        ]
+                                    },
+                                    "delai_traitement_jours": {
+                                        "type": "integer"
+                                    },
+                                    "cible_specifique": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        },
+                                        "nullable": true
+                                    },
+                                    "zones_couverture": {
+                                        "type": "array",
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Offre mise à jour"
+                    },
+                    "403": {
+                        "description": "Action non autorisée"
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "delete": {
+                "tags": [
+                    "Offres"
+                ],
+                "summary": "Supprimer une offre",
+                "operationId": "a2d138005f287ee61e97ea164e3ef254",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Offre supprimée"
+                    },
+                    "403": {
+                        "description": "Action non autorisée"
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/offres/{id}/simulation-params": {
+            "get": {
+                "tags": [
+                    "Offres"
+                ],
+                "summary": "Paramètres pré-remplis pour le simulateur à partir d'une offre",
+                "operationId": "f47d761cbacff34474095b0d2aa95d70",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paramètres de simulation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id_offre": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                        },
+                                        "montant_min": {
+                                            "type": "integer",
+                                            "example": 50000
+                                        },
+                                        "montant_max": {
+                                            "type": "integer",
+                                            "example": 5000000
+                                        },
+                                        "duree_min_mois": {
+                                            "type": "integer",
+                                            "example": 3
+                                        },
+                                        "duree_max_mois": {
+                                            "type": "integer",
+                                            "example": 24
+                                        },
+                                        "taux_interet_mensuel": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 2.5
+                                        },
+                                        "frais_dossier": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 5000,
+                                            "nullable": true
+                                        },
+                                        "assurance": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 1000,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/portail/dashboard": {
+            "get": {
+                "tags": [
+                    "Portail"
+                ],
+                "summary": "Tableau de bord de l'IMF connectée",
+                "operationId": "55f8d00567d537aaa31b25d13f2ff1bb",
+                "responses": {
+                    "200": {
+                        "description": "Données du tableau de bord"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/portail/stats": {
+            "get": {
+                "tags": [
+                    "Portail"
+                ],
+                "summary": "Stats globales IMF sur 30j, détaillées par offre",
+                "operationId": "2d1272cf1bcdee0745404612d91cb7cc",
+                "responses": {
+                    "200": {
+                        "description": "Stats par offre"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/portail/stats/offre/{id}": {
+            "get": {
+                "tags": [
+                    "Portail"
+                ],
+                "summary": "Stats d'une offre groupées par semaine sur 12 semaines",
+                "operationId": "5daf808cec0b3e20bd52739f4ff06829",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Stats hebdomadaires"
+                    },
+                    "403": {
+                        "description": "Action non autorisée"
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/portail/stats/export": {
+            "get": {
+                "tags": [
+                    "Portail"
+                ],
+                "summary": "Export CSV des stats sur 12 mois",
+                "operationId": "69b966af74eae5c989dcae369346d537",
+                "responses": {
+                    "200": {
+                        "description": "Fichier CSV"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/portail/profil": {
+            "get": {
+                "tags": [
+                    "Portail"
+                ],
+                "summary": "Profil de l'IMF de l'agent connecté",
+                "operationId": "05e9a9ab39f7b933af8cef6b4b9b08bf",
+                "responses": {
+                    "200": {
+                        "description": "Profil IMF"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Portail"
+                ],
+                "summary": "Mise à jour du profil de l'IMF",
+                "operationId": "bb19824c374c5c1417d3059c4cd66fd2",
+                "responses": {
+                    "200": {
+                        "description": "Profil mis à jour"
+                    },
+                    "422": {
+                        "description": "Données invalides"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/simulations": {
+            "post": {
+                "tags": [
+                    "Simulations"
+                ],
+                "summary": "Créer une simulation de crédit",
+                "operationId": "d1b3e086a3bd50cd913d747e739befab",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "montant_emprunte",
+                                    "duree_mois",
+                                    "taux_utilise"
+                                ],
+                                "properties": {
+                                    "montant_emprunte": {
+                                        "type": "integer",
+                                        "example": 500000
+                                    },
+                                    "duree_mois": {
+                                        "type": "integer",
+                                        "example": 12
+                                    },
+                                    "taux_utilise": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.5
+                                    },
+                                    "id_offre": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                    },
+                                    "frais_dossier": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "assurance": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Simulation créée"
+                    },
+                    "422": {
+                        "description": "Données invalides"
+                    }
+                }
+            }
+        },
+        "/api/v1/simulations/preview": {
+            "post": {
+                "tags": [
+                    "Simulations"
+                ],
+                "summary": "Calculer une simulation sans persistance",
+                "operationId": "0af4bc185526050775406d091e6044c0",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "montant_emprunte",
+                                    "duree_mois",
+                                    "taux_utilise"
+                                ],
+                                "properties": {
+                                    "montant_emprunte": {
+                                        "type": "integer",
+                                        "example": 500000
+                                    },
+                                    "duree_mois": {
+                                        "type": "integer",
+                                        "example": 24
+                                    },
+                                    "taux_utilise": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "example": 2.5
+                                    },
+                                    "id_offre": {
+                                        "type": "string",
+                                        "format": "uuid",
+                                        "nullable": true
+                                    },
+                                    "frais_dossier": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    },
+                                    "assurance": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "nullable": true
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Résultat de simulation (non persisté)"
+                    },
+                    "422": {
+                        "description": "Données invalides"
+                    }
+                }
+            }
+        },
+        "/api/v1/simulations/{id}": {
+            "get": {
+                "tags": [
+                    "Simulations"
+                ],
+                "summary": "Afficher une simulation",
+                "operationId": "8357c7c1ce068f73fb326f691d64033f",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Détails de la simulation"
+                    },
+                    "403": {
+                        "description": "Accès non autorisé"
+                    },
+                    "404": {
+                        "description": "Simulation introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/users/me/simulations": {
+            "get": {
+                "tags": [
+                    "Simulations"
+                ],
+                "summary": "Lister les simulations de l'utilisateur authentifié",
+                "operationId": "08bab9084ca692095f815bc3d1f19729",
+                "responses": {
+                    "200": {
+                        "description": "Liste paginée des simulations"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        }
+    },
+    "components": {
+        "securitySchemes": {
+            "bearerAuth": {
+                "type": "http",
+                "scheme": "bearer",
+                "bearerFormat": "JWT",
+                "description": "Entrez le token JWT obtenu via POST /api/auth/otp/verify"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Admin",
+            "description": "Admin"
+        },
+        {
+            "name": "Admin - IMFs",
+            "description": "Admin - IMFs"
+        },
+        {
+            "name": "Admin - Journal",
+            "description": "Admin - Journal"
+        },
+        {
+            "name": "Admin - Slider",
+            "description": "Admin - Slider"
+        },
+        {
+            "name": "Authentification",
+            "description": "Authentification"
+        },
+        {
+            "name": "Offres",
+            "description": "Offres"
+        },
+        {
+            "name": "Portail",
+            "description": "Portail"
+        },
+        {
+            "name": "Simulations",
+            "description": "Simulations"
+        }
+    ]
+}

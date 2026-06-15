@@ -1,0 +1,1816 @@
+openapi: 3.0.3
+
+info:
+  title: Baraka API
+  version: 1.0.0
+  description: API de comparaison et simulation de microcrédits – Burkina Faso
+
+servers:
+  - url: https://api.baraka.bf/api/v1
+    description: Production
+
+paths:
+
+  # ── AUTHENTIFICATION UTILISATEUR ──────────────────────────────────────────
+
+  /auth/otp/request:
+    post:
+      tags: [Authentification]
+      summary: Demander un code OTP par SMS
+      description: Envoie un code OTP à 6 chiffres au numéro de téléphone fourni.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [telephone]
+              properties:
+                telephone:
+                  type: string
+                  example: "+22670000001"
+      responses:
+        "200":
+          description: OTP envoyé avec succès
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessSimple"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /auth/otp/verify:
+    post:
+      tags: [Authentification]
+      summary: Vérifier le code OTP et obtenir un JWT utilisateur
+      description: Vérifie l'OTP et retourne un token JWT. Crée l'utilisateur automatiquement s'il n'existe pas.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [telephone, code]
+              properties:
+                telephone:
+                  type: string
+                  example: "+22670000001"
+                code:
+                  type: string
+                  example: "123456"
+      responses:
+        "200":
+          description: Authentification réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      user:
+                        $ref: "#/components/schemas/User"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  # ── OFFRES PUBLIQUES ───────────────────────────────────────────────────────
+
+  /offres:
+    get:
+      tags: [Offres]
+      summary: Lister les offres actives
+      description: Retourne la liste paginée des offres de microcrédit actives (20 par page).
+      parameters:
+        - name: id_imf
+          in: query
+          description: Filtrer par IMF
+          schema:
+            type: string
+            format: uuid
+        - name: statut
+          in: query
+          schema:
+            type: string
+            enum: [actif]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Liste paginée des offres
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOffres"
+
+  /offres/{id}:
+    get:
+      tags: [Offres]
+      summary: Détail d'une offre
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Détail de l'offre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Offre"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /offres/{id}/simulation-params:
+    get:
+      tags: [Offres]
+      summary: Paramètres de simulation pré-remplis pour une offre
+      description: Retourne les bornes de l'offre pour pré-remplir le simulateur.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Paramètres de l'offre pour le simulateur
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      id_offre:
+                        type: string
+                        format: uuid
+                      montant_min:
+                        type: integer
+                      montant_max:
+                        type: integer
+                      duree_min_mois:
+                        type: integer
+                      duree_max_mois:
+                        type: integer
+                      taux_interet_mensuel:
+                        type: number
+                      frais_dossier:
+                        type: number
+                        nullable: true
+                      assurance:
+                        type: number
+                        nullable: true
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── SIMULATIONS ────────────────────────────────────────────────────────────
+
+  /simulations/preview:
+    post:
+      tags: [Simulations]
+      summary: Calculer une simulation sans enregistrement
+      description: Calcule et retourne les données d'une simulation sans la persister. Aucune auth requise.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulationInput"
+      responses:
+        "200":
+          description: Résultat du calcul
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/SimulationResult"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /simulations:
+    post:
+      tags: [Simulations]
+      summary: Créer et enregistrer une simulation
+      description: >
+        Persiste une simulation en base. Si un token utilisateur (bearerAuth) est fourni,
+        la simulation est associée à cet utilisateur. L'auth est optionnelle.
+      security:
+        - bearerAuth: []
+        - {}
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SimulationInput"
+      responses:
+        "201":
+          description: Simulation créée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Simulation"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /simulations/{id}:
+    get:
+      tags: [Simulations]
+      summary: Consulter une simulation enregistrée
+      description: Retourne la simulation. Si elle appartient à un utilisateur, seul cet utilisateur peut y accéder.
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Détail de la simulation
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Simulation"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /users/me/simulations:
+    get:
+      tags: [Simulations]
+      summary: Mes simulations enregistrées (utilisateur connecté)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Simulations de l'utilisateur (paginées)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedSimulations"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  # ── PORTAIL AGENTS IMF ─────────────────────────────────────────────────────
+
+  /portail/auth/login:
+    post:
+      tags: [Portail – Auth]
+      summary: Connexion agent IMF
+      description: Retourne un token JWT portail (HS256, valide JWT_PORTAIL_TTL minutes).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      agent:
+                        $ref: "#/components/schemas/Agent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /portail/dashboard:
+    get:
+      tags: [Portail – Dashboard]
+      summary: Tableau de bord de l'IMF (KPIs 30 jours)
+      security:
+        - portailAuth: []
+      responses:
+        "200":
+          description: KPIs du tableau de bord
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/DashboardPortail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /portail/profil:
+    get:
+      tags: [Portail – Profil IMF]
+      summary: Consulter le profil de l'IMF
+      security:
+        - portailAuth: []
+      responses:
+        "200":
+          description: Profil de l'IMF avec taux de complétion
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    allOf:
+                      - $ref: "#/components/schemas/Imf"
+                      - type: object
+                        properties:
+                          completion_profil:
+                            type: integer
+                            description: Taux de complétion du profil en %
+                            example: 75
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    put:
+      tags: [Portail – Profil IMF]
+      summary: Mettre à jour le profil de l'IMF
+      security:
+        - portailAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProfilImfInput"
+      responses:
+        "200":
+          description: Profil mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Imf"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /portail/stats:
+    get:
+      tags: [Portail – Statistiques]
+      summary: Statistiques globales de l'IMF sur 30 jours
+      security:
+        - portailAuth: []
+      responses:
+        "200":
+          description: Statistiques globales et par offre
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/StatsPortail"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /portail/stats/offre/{id}:
+    get:
+      tags: [Portail – Statistiques]
+      summary: Statistiques hebdomadaires d'une offre (12 semaines)
+      security:
+        - portailAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Statistiques de l'offre par semaine
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      offre:
+                        $ref: "#/components/schemas/Offre"
+                      semaines:
+                        type: array
+                        items:
+                          type: object
+                          properties:
+                            semaine:
+                              type: string
+                              example: "2025-W23"
+                            vues:
+                              type: integer
+                            simulations:
+                              type: integer
+                            clics:
+                              type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /portail/stats/export:
+    get:
+      tags: [Portail – Statistiques]
+      summary: Exporter les statistiques en CSV (12 mois)
+      security:
+        - portailAuth: []
+      responses:
+        "200":
+          description: Fichier CSV des statistiques mensuelles
+          content:
+            text/csv:
+              schema:
+                type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /portail/offres:
+    get:
+      tags: [Portail – Offres]
+      summary: Lister les offres de l'IMF
+      security:
+        - portailAuth: []
+      parameters:
+        - name: statut
+          in: query
+          schema:
+            type: string
+            enum: [brouillon, en_validation, actif, inactif]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+      responses:
+        "200":
+          description: Offres paginées de l'IMF
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOffres"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Portail – Offres]
+      summary: Créer une nouvelle offre (statut initial = brouillon)
+      security:
+        - portailAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OffreInput"
+      responses:
+        "201":
+          description: Offre créée en brouillon
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Offre"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /portail/offres/{id}:
+    put:
+      tags: [Portail – Offres]
+      summary: Modifier une offre
+      security:
+        - portailAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              allOf:
+                - $ref: "#/components/schemas/OffreInput"
+                - type: object
+                  properties:
+                    statut:
+                      type: string
+                      enum: [brouillon, en_validation, actif, inactif]
+      responses:
+        "200":
+          description: Offre mise à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/Offre"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+    delete:
+      tags: [Portail – Offres]
+      summary: Supprimer une offre
+      security:
+        - portailAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Offre supprimée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    nullable: true
+                    example: null
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  # ── ADMIN ──────────────────────────────────────────────────────────────────
+
+  /admin/auth/login:
+    post:
+      tags: [Admin – Auth]
+      summary: Connexion administrateur
+      description: Retourne un token JWT admin (HS256, valide JWT_ADMIN_TTL minutes).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        "200":
+          description: Connexion réussie
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      token:
+                        type: string
+                      admin:
+                        $ref: "#/components/schemas/Admin"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /admin/dashboard:
+    get:
+      tags: [Admin – Dashboard]
+      summary: Tableau de bord administrateur (vue d'ensemble plateforme)
+      security:
+        - adminAuth: []
+      responses:
+        "200":
+          description: KPIs globaux de la plateforme
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    $ref: "#/components/schemas/DashboardAdmin"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /admin/moderation/offres:
+    get:
+      tags: [Admin – Modération]
+      summary: Offres en attente de validation
+      security:
+        - adminAuth: []
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Liste paginée des offres en_validation (avec détails IMF)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/PaginatedOffres"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+
+  /admin/moderation/offres/{id}/approuver:
+    post:
+      tags: [Admin – Modération]
+      summary: Approuver une offre (statut → actif)
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: Offre approuvée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id_offre:
+                        type: string
+                        format: uuid
+                      statut:
+                        type: string
+                        example: actif
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/moderation/offres/{id}/rejeter:
+    post:
+      tags: [Admin – Modération]
+      summary: Rejeter une offre avec motif (statut → brouillon)
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [motif]
+              properties:
+                motif:
+                  type: string
+                  minLength: 10
+                  maxLength: 1000
+                  description: Raison du rejet communiquée à l'IMF
+      responses:
+        "200":
+          description: Offre rejetée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id_offre:
+                        type: string
+                        format: uuid
+                      statut:
+                        type: string
+                        example: brouillon
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /admin/imfs:
+    get:
+      tags: [Admin – IMFs]
+      summary: Lister les IMFs avec filtres et compteurs
+      security:
+        - adminAuth: []
+      parameters:
+        - name: statut
+          in: query
+          schema:
+            type: string
+            enum: [actif, suspendu]
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: IMFs paginées avec nb_agents et nb_offres
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          allOf:
+                            - $ref: "#/components/schemas/Imf"
+                            - type: object
+                              properties:
+                                nb_agents:
+                                  type: integer
+                                nb_offres:
+                                  type: integer
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+    post:
+      tags: [Admin – IMFs]
+      summary: Créer une IMF et son premier agent (admin_imf)
+      security:
+        - adminAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateImfInput"
+      responses:
+        "201":
+          description: IMF et agent créés
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      imf:
+                        $ref: "#/components/schemas/Imf"
+                      agent:
+                        $ref: "#/components/schemas/Agent"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+  /admin/imfs/{id}/suspendre:
+    put:
+      tags: [Admin – IMFs]
+      summary: Suspendre une IMF et désactiver toutes ses offres actives
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: IMF suspendue
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      statut:
+                        type: string
+                        example: suspendu
+                      offres_desactivees:
+                        type: integer
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/imfs/{id}/reactiver:
+    put:
+      tags: [Admin – IMFs]
+      summary: Réactiver une IMF suspendue
+      security:
+        - adminAuth: []
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: IMF réactivée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    type: object
+                    properties:
+                      id:
+                        type: string
+                        format: uuid
+                      statut:
+                        type: string
+                        example: actif
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/imfs/{id}:
+    delete:
+      tags: [Admin – IMFs]
+      summary: Supprimer une IMF — soft delete (super_admin uniquement)
+      security:
+        - adminAuth: [super_admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      responses:
+        "200":
+          description: IMF supprimée
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /admin/journal:
+    get:
+      tags: [Admin – Journal]
+      summary: Journal d'audit des actions admin (super_admin uniquement)
+      security:
+        - adminAuth: [super_admin]
+      parameters:
+        - name: id_admin
+          in: query
+          description: Filtrer par administrateur
+          schema:
+            type: string
+            format: uuid
+        - name: action
+          in: query
+          description: Filtrer par type d'action
+          schema:
+            type: string
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+        - name: per_page
+          in: query
+          schema:
+            type: integer
+            default: 20
+      responses:
+        "200":
+          description: Journal paginé
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: object
+                    properties:
+                      data:
+                        type: array
+                        items:
+                          $ref: "#/components/schemas/JournalAdmin"
+                      meta:
+                        $ref: "#/components/schemas/PaginationMeta"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/slider:
+    get:
+      tags: [Admin – Slider]
+      summary: Lister les slides du carousel héro (super_admin uniquement)
+      security:
+        - adminAuth: [super_admin]
+      responses:
+        "200":
+          description: Liste de tous les slides
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  data:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Slider"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+
+  /admin/slider/{id}:
+    put:
+      tags: [Admin – Slider]
+      summary: Modifier un slide du carousel (super_admin uniquement)
+      security:
+        - adminAuth: [super_admin]
+      parameters:
+        - $ref: "#/components/parameters/Id"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                ordre:
+                  type: integer
+                image_url:
+                  type: string
+                  format: uri
+                titre:
+                  type: string
+                  nullable: true
+                lien:
+                  type: string
+                  format: uri
+                  nullable: true
+                actif:
+                  type: boolean
+      responses:
+        "200":
+          description: Slide mis à jour
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  message:
+                    type: string
+                  data:
+                    $ref: "#/components/schemas/Slider"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "403":
+          $ref: "#/components/responses/Forbidden"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "422":
+          $ref: "#/components/responses/UnprocessableEntity"
+
+components:
+
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT utilisateur (OTP-based, signé avec JWT_SECRET)
+    portailAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT agent IMF (signé HS256 avec JWT_PORTAIL_SECRET)
+    adminAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: Token JWT administrateur (signé HS256 avec JWT_ADMIN_SECRET). Scope super_admin requis pour certaines routes.
+
+  parameters:
+    Id:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  responses:
+    Unauthorized:
+      description: Non authentifié – token absent, expiré ou invalide
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    Forbidden:
+      description: Accès refusé – droits insuffisants
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    NotFound:
+      description: Ressource introuvable
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ErrorResponse"
+    UnprocessableEntity:
+      description: Erreur de validation des données
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/ValidationErrorResponse"
+
+  schemas:
+
+    # ── ENTITÉS MÉTIER ─────────────────────────────────────────────────────
+
+    Imf:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        nom:
+          type: string
+        logo_url:
+          type: string
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        zones_couverture:
+          type: array
+          items:
+            type: string
+        statut:
+          type: string
+          enum: [actif, suspendu]
+        email_contact:
+          type: string
+          format: email
+        telephone:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - nom
+        - zones_couverture
+        - statut
+        - email_contact
+
+    Agent:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        id_imf:
+          type: string
+          format: uuid
+        nom:
+          type: string
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin_imf, agent]
+        statut:
+          type: string
+          enum: [actif, inactif]
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - id_imf
+        - nom
+        - email
+        - role
+
+    Admin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        email:
+          type: string
+          format: email
+        role:
+          type: string
+          enum: [admin, super_admin]
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - email
+        - role
+
+    Offre:
+      type: object
+      properties:
+        id_offre:
+          type: string
+          format: uuid
+          readOnly: true
+        id_imf:
+          type: string
+          format: uuid
+        nom_produit:
+          type: string
+        taux_interet_mensuel:
+          type: number
+          format: float
+          example: 2.50
+        montant_min:
+          type: integer
+        montant_max:
+          type: integer
+        duree_min_mois:
+          type: integer
+        duree_max_mois:
+          type: integer
+        frais_dossier:
+          type: number
+          format: float
+          nullable: true
+        assurance:
+          type: number
+          format: float
+          nullable: true
+        garantie_requise:
+          type: string
+          enum: [aucune, caution, neant, bien]
+        delai_traitement_jours:
+          type: integer
+        cible_specifique:
+          type: array
+          items:
+            type: string
+          nullable: true
+        zones_couverture:
+          type: array
+          items:
+            type: string
+        statut:
+          type: string
+          enum: [brouillon, en_validation, actif, inactif]
+        date_mise_a_jour:
+          type: string
+          format: date-time
+          nullable: true
+      required:
+        - id_imf
+        - nom_produit
+        - taux_interet_mensuel
+        - montant_min
+        - montant_max
+        - duree_min_mois
+        - duree_max_mois
+        - garantie_requise
+        - delai_traitement_jours
+        - zones_couverture
+        - statut
+
+    Simulation:
+      type: object
+      properties:
+        id_simulation:
+          type: string
+          format: uuid
+          readOnly: true
+        id_utilisateur:
+          type: string
+          format: uuid
+          nullable: true
+        id_offre:
+          type: string
+          format: uuid
+          nullable: true
+        montant_emprunte:
+          type: integer
+        duree_mois:
+          type: integer
+        taux_utilise:
+          type: number
+          format: float
+        cout_total:
+          type: integer
+        mensualite:
+          type: integer
+        tableau_amortissement:
+          type: array
+          items:
+            type: object
+            properties:
+              mois:
+                type: integer
+              mensualite:
+                type: number
+              capital:
+                type: number
+              interet:
+                type: number
+              solde_restant:
+                type: number
+        date_creation:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - montant_emprunte
+        - duree_mois
+        - taux_utilise
+        - cout_total
+        - mensualite
+        - tableau_amortissement
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        telephone:
+          type: string
+        nom:
+          type: string
+          nullable: true
+        statut:
+          type: string
+          enum: [actif, suspendu]
+          default: actif
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+        - telephone
+
+    JournalAdmin:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        id_admin:
+          type: string
+          format: uuid
+        action:
+          type: string
+          example: imf_suspendue
+        entite:
+          type: string
+          nullable: true
+          example: imf
+        id_entite:
+          type: string
+          format: uuid
+          nullable: true
+        details:
+          type: object
+          nullable: true
+          additionalProperties: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    Slider:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+          readOnly: true
+        ordre:
+          type: integer
+        image_url:
+          type: string
+          format: uri
+        titre:
+          type: string
+          nullable: true
+        lien:
+          type: string
+          format: uri
+          nullable: true
+        actif:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+
+    # ── INPUTS (corps de requête) ──────────────────────────────────────────
+
+    SimulationInput:
+      type: object
+      required:
+        - montant_emprunte
+        - duree_mois
+        - taux_utilise
+      properties:
+        montant_emprunte:
+          type: integer
+          minimum: 25000
+          maximum: 10000000
+          example: 500000
+        duree_mois:
+          type: integer
+          enum: [1, 3, 6, 12, 18, 24]
+          example: 12
+        taux_utilise:
+          type: number
+          minimum: 0
+          example: 2.5
+        id_offre:
+          type: string
+          format: uuid
+          nullable: true
+        frais_dossier:
+          type: number
+          minimum: 0
+          nullable: true
+        assurance:
+          type: number
+          minimum: 0
+          nullable: true
+
+    OffreInput:
+      type: object
+      required:
+        - nom_produit
+        - taux_interet_mensuel
+        - montant_min
+        - montant_max
+        - duree_min_mois
+        - duree_max_mois
+        - garantie_requise
+        - delai_traitement_jours
+        - zones_couverture
+      properties:
+        nom_produit:
+          type: string
+          maxLength: 255
+        taux_interet_mensuel:
+          type: number
+          minimum: 0
+        montant_min:
+          type: integer
+          minimum: 0
+        montant_max:
+          type: integer
+          description: Doit être >= montant_min
+        duree_min_mois:
+          type: integer
+          minimum: 1
+        duree_max_mois:
+          type: integer
+          description: Doit être >= duree_min_mois
+        frais_dossier:
+          type: number
+          minimum: 0
+          nullable: true
+        assurance:
+          type: number
+          minimum: 0
+          nullable: true
+        garantie_requise:
+          type: string
+          enum: [aucune, caution, neant, bien]
+        delai_traitement_jours:
+          type: integer
+          minimum: 0
+        cible_specifique:
+          type: array
+          items:
+            type: string
+          nullable: true
+        zones_couverture:
+          type: array
+          items:
+            type: string
+          minItems: 1
+
+    ProfilImfInput:
+      type: object
+      required:
+        - nom
+        - zones_couverture
+        - email_contact
+      properties:
+        nom:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+          nullable: true
+        zones_couverture:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        email_contact:
+          type: string
+          format: email
+        telephone:
+          type: string
+          maxLength: 30
+          nullable: true
+
+    CreateImfInput:
+      type: object
+      required:
+        - nom
+        - email_contact
+        - zones_couverture
+        - agent_nom
+        - agent_email
+        - agent_password
+      properties:
+        nom:
+          type: string
+          maxLength: 255
+        email_contact:
+          type: string
+          format: email
+        telephone:
+          type: string
+          maxLength: 30
+          nullable: true
+        description:
+          type: string
+          nullable: true
+        zones_couverture:
+          type: array
+          items:
+            type: string
+          minItems: 1
+        logo_url:
+          type: string
+          format: uri
+          nullable: true
+        agent_nom:
+          type: string
+          maxLength: 255
+        agent_email:
+          type: string
+          format: email
+          description: Doit être unique dans la table agents
+        agent_password:
+          type: string
+          minLength: 8
+          format: password
+
+    # ── RÉPONSES COMPOSÉES ─────────────────────────────────────────────────
+
+    SimulationResult:
+      type: object
+      properties:
+        montant_emprunte:
+          type: integer
+        duree_mois:
+          type: integer
+        taux_utilise:
+          type: number
+        montant_net:
+          type: integer
+          description: Montant effectivement décaissé (après frais et assurance)
+        mensualite:
+          type: integer
+        cout_total:
+          type: integer
+        teg:
+          type: number
+          description: Taux effectif global annualisé
+        tableau_amortissement:
+          type: array
+          items:
+            type: object
+            properties:
+              mois:
+                type: integer
+              mensualite:
+                type: number
+              capital:
+                type: number
+              interet:
+                type: number
+              solde_restant:
+                type: number
+
+    DashboardPortail:
+      type: object
+      properties:
+        offres_actives:
+          type: integer
+        offres_en_validation:
+          type: integer
+        vues_30j:
+          type: integer
+        simulations_30j:
+          type: integer
+        taux_conversion:
+          type: number
+          description: Ratio simulations/vues en %
+        ads_actives:
+          type: integer
+        completion_profil:
+          type: integer
+          description: Taux de complétion du profil IMF en %
+        alertes:
+          type: array
+          items:
+            type: string
+
+    StatsPortail:
+      type: object
+      properties:
+        periode:
+          type: string
+          example: "30j"
+        totaux:
+          type: object
+          properties:
+            vues:
+              type: integer
+            simulations:
+              type: integer
+            clics:
+              type: integer
+            taux_conversion:
+              type: number
+        detail_offres:
+          type: array
+          items:
+            type: object
+            properties:
+              id_offre:
+                type: string
+                format: uuid
+              nom_produit:
+                type: string
+              vues:
+                type: integer
+              simulations:
+                type: integer
+              clics:
+                type: integer
+
+    DashboardAdmin:
+      type: object
+      properties:
+        imfs:
+          type: object
+          properties:
+            par_statut:
+              type: object
+              additionalProperties:
+                type: integer
+              example:
+                actif: 12
+                suspendu: 2
+            total:
+              type: integer
+        offres:
+          type: object
+          properties:
+            par_statut:
+              type: object
+              additionalProperties:
+                type: integer
+              example:
+                actif: 45
+                brouillon: 8
+                en_validation: 3
+                inactif: 5
+            total:
+              type: integer
+        offres_en_attente:
+          type: integer
+          description: Raccourci vers offres.par_statut.en_validation
+        alertes_urgentes:
+          type: array
+          items:
+            type: string
+
+    PaginationMeta:
+      type: object
+      properties:
+        current_page:
+          type: integer
+        last_page:
+          type: integer
+        per_page:
+          type: integer
+        total:
+          type: integer
+
+    PaginatedOffres:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Offre"
+            meta:
+              $ref: "#/components/schemas/PaginationMeta"
+
+    PaginatedSimulations:
+      type: object
+      properties:
+        success:
+          type: boolean
+        data:
+          type: object
+          properties:
+            data:
+              type: array
+              items:
+                $ref: "#/components/schemas/Simulation"
+            meta:
+              $ref: "#/components/schemas/PaginationMeta"
+
+    SuccessSimple:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: true
+
+    ErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+
+    ValidationErrorResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+          example: false
+        message:
+          type: string
+        errors:
+          type: object
+          additionalProperties:
+            type: array
+            items:
+              type: string
+          example:
+            telephone: ["Le champ telephone est obligatoire."]
