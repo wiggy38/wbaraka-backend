@@ -7,7 +7,13 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\OffreController;
 use App\Http\Controllers\PortailController;
 use App\Http\Controllers\SimulationController;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+
+Route::get('health', function () {
+    DB::connection()->getPdo();
+    return response()->json(['status' => 'ok']);
+});
 
 Route::prefix('v1')->group(function () {
 
