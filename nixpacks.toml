@@ -1,5 +1,5 @@
 [phases.setup]
-nixPkgs = ["php82", "php82Extensions.pdo", "php82Extensions.pdo_pgsql", "php82Extensions.pgsql", "php82Extensions.redis", "php82Extensions.mbstring", "php82Extensions.xml", "php82Extensions.curl", "php82Extensions.zip", "php82Extensions.gd", "php82Extensions.bcmath", "php82Extensions.tokenizer", "php82Extensions.ctype", "php82Extensions.fileinfo", "php82Extensions.openssl", "composer"]
+nixPkgs = ["php82", "php82Extensions.pdo", "php82Extensions.pdo_pgsql", "php82Extensions.pgsql", "php82Extensions.redis", "php82Extensions.mbstring", "php82Extensions.xml", "php82Extensions.curl", "php82Extensions.zip", "php82Extensions.gd", "php82Extensions.bcmath", "php82Extensions.tokenizer", "php82Extensions.ctype", "php82Extensions.fileinfo", "php82Extensions.openssl", "php82Packages.composer"]
 
 [phases.build]
 cmds = ["composer install --no-dev --optimize-autoloader --no-interaction", "php artisan key:generate --force"]
