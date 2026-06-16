@@ -5,4 +5,4 @@ nixPkgs = ["php84", "php84Extensions.pdo", "php84Extensions.pdo_pgsql", "php84Ex
 cmds = []
 
 [phases.build]
-cmds = ["composer install --no-dev --optimize-autoloader --no-interaction", "php artisan key:generate --force"]
+cmds = ["composer install --no-dev --optimize-autoloader --no-interaction"]
