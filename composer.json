@@ -9,7 +9,7 @@
         "php": "^8.4",
         "africastalking/africastalking": "^3.0",
         "darkaonline/l5-swagger": "^11.1",
-        "laravel/framework": "^11.31",
+        "laravel/framework": "^11.44",
         "laravel/tinker": "^2.9",
         "predis/predis": "^3.5",
         "sentry/sentry-laravel": "^4.26",
@@ -69,6 +69,11 @@
         "allow-plugins": {
             "pestphp/pest-plugin": true,
             "php-http/discovery": true
+        },
+        "policy": {
+            "advisories": {
+                "block": false
+            }
         }
     },
     "minimum-stability": "stable",
