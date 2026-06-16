@@ -18,7 +18,7 @@ use OpenApi\Attributes as OA;
     type: 'http',
     scheme: 'bearer',
     bearerFormat: 'JWT',
-    description: 'Token JWT obtenu via POST /api/auth/otp/verify'
+    description: 'Token JWT obtenu via POST /api/v1/auth/otp/verify ou POST /api/v1/portail/auth/login'
 )]
 class ApiDoc
 {

@@ -14,7 +14,7 @@ class AuthController extends Controller
     public function __construct(private OtpService $otpService) {}
 
     #[OA\Post(
-        path: '/api/auth/otp/request',
+        path: '/api/v1/auth/otp/request',
         summary: 'Demander un OTP par SMS',
         tags: ['Authentification'],
         requestBody: new OA\RequestBody(
@@ -51,7 +51,7 @@ class AuthController extends Controller
     }
 
     #[OA\Post(
-        path: '/api/auth/otp/verify',
+        path: '/api/v1/auth/otp/verify',
         summary: "Vérifier l'OTP et obtenir un token JWT",
         tags: ['Authentification'],
         requestBody: new OA\RequestBody(

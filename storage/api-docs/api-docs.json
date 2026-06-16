@@ -12,6 +12,73 @@
         }
     ],
     "paths": {
+        "/api/v1/admin/auth/login": {
+            "post": {
+                "tags": [
+                    "Admin Auth"
+                ],
+                "summary": "Authentification administrateur",
+                "operationId": "fd2e0df70b3d6a5abbf2c712d7c17792",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "admin@baraka.ml"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token JWT retourné",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "admin": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Identifiants invalides"
+                    }
+                }
+            }
+        },
         "/api/v1/admin/dashboard": {
             "get": {
                 "tags": [
@@ -554,13 +621,83 @@
                 ]
             }
         },
-        "/api/auth/otp/request": {
+        "/api/v1/portail/auth/login": {
+            "post": {
+                "tags": [
+                    "Portail Auth"
+                ],
+                "summary": "Authentification agent IMF (portail)",
+                "operationId": "d4cf4ccec12afcd9b2a41ef8b79ae112",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "email",
+                                    "password"
+                                ],
+                                "properties": {
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "example": "agent@imf.ml"
+                                    },
+                                    "password": {
+                                        "type": "string",
+                                        "format": "password",
+                                        "example": "secret123"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Token JWT retourné",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "success": {
+                                            "type": "boolean",
+                                            "example": true
+                                        },
+                                        "data": {
+                                            "properties": {
+                                                "token": {
+                                                    "type": "string"
+                                                },
+                                                "agent": {
+                                                    "type": "object"
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "401": {
+                        "description": "Identifiants invalides"
+                    },
+                    "403": {
+                        "description": "Compte inactif"
+                    }
+                }
+            }
+        },
+        "/api/v1/auth/otp/request": {
             "post": {
                 "tags": [
                     "Authentification"
                 ],
                 "summary": "Demander un OTP par SMS",
-                "operationId": "6e74ccbaecf96c72cdb4b860b7118062",
+                "operationId": "0b970dcc2a697dbc017d512fb82febe9",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -603,13 +740,13 @@
                 }
             }
         },
-        "/api/auth/otp/verify": {
+        "/api/v1/auth/otp/verify": {
             "post": {
                 "tags": [
                     "Authentification"
                 ],
                 "summary": "Vérifier l'OTP et obtenir un token JWT",
-                "operationId": "1b1c3480978f35a7bb0eee7fe8aa3bb8",
+                "operationId": "2251017c30ede8e787321f150f3c8853",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -686,13 +823,13 @@
                 }
             }
         },
-        "/api/offres": {
+        "/api/v1/offres": {
             "get": {
                 "tags": [
                     "Offres"
                 ],
-                "summary": "Lister les offres (paginées)",
-                "operationId": "f3cff18319f140d35cd2d76c6fae0842",
+                "summary": "Lister les offres publiques (paginées)",
+                "operationId": "edfd34c2b098858883f894b604e7c651",
                 "parameters": [
                     {
                         "name": "id_imf",
@@ -729,13 +866,125 @@
                         "bearerAuth": []
                     }
                 ]
-            },
+            }
+        },
+        "/api/v1/offres/{id}": {
+            "get": {
+                "tags": [
+                    "Offres"
+                ],
+                "summary": "Afficher une offre",
+                "operationId": "c8eda619a02f828829c32c21210dff07",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Détails de l'offre"
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    },
+                    "401": {
+                        "description": "Non authentifié"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
+        "/api/v1/offres/{id}/simulation-params": {
+            "get": {
+                "tags": [
+                    "Offres"
+                ],
+                "summary": "Paramètres pré-remplis pour le simulateur à partir d'une offre",
+                "operationId": "5097f37c5588818197b5647de64d02f8",
+                "parameters": [
+                    {
+                        "name": "id",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string",
+                            "format": "uuid"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Paramètres de simulation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "id_offre": {
+                                            "type": "string",
+                                            "format": "uuid"
+                                        },
+                                        "montant_min": {
+                                            "type": "integer",
+                                            "example": 50000
+                                        },
+                                        "montant_max": {
+                                            "type": "integer",
+                                            "example": 5000000
+                                        },
+                                        "duree_min_mois": {
+                                            "type": "integer",
+                                            "example": 3
+                                        },
+                                        "duree_max_mois": {
+                                            "type": "integer",
+                                            "example": 24
+                                        },
+                                        "taux_interet_mensuel": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 2.5
+                                        },
+                                        "frais_dossier": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 5000,
+                                            "nullable": true
+                                        },
+                                        "assurance": {
+                                            "type": "number",
+                                            "format": "float",
+                                            "example": 1000,
+                                            "nullable": true
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Offre introuvable"
+                    }
+                }
+            }
+        },
+        "/api/v1/portail/offres": {
             "post": {
                 "tags": [
                     "Offres"
                 ],
-                "summary": "Créer une nouvelle offre",
-                "operationId": "4680b58f335cc0c67ba3dae9e6ae621c",
+                "summary": "Créer une nouvelle offre (portail agent)",
+                "operationId": "eb725f9fc6b69e91cf267fa46589da03",
                 "requestBody": {
                     "required": true,
                     "content": {
@@ -849,47 +1098,13 @@
                 ]
             }
         },
-        "/api/offres/{id}": {
-            "get": {
-                "tags": [
-                    "Offres"
-                ],
-                "summary": "Afficher une offre",
-                "operationId": "feb7d129e709e5e262a0782ca6b51880",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Détails de l'offre"
-                    },
-                    "404": {
-                        "description": "Offre introuvable"
-                    },
-                    "401": {
-                        "description": "Non authentifié"
-                    }
-                },
-                "security": [
-                    {
-                        "bearerAuth": []
-                    }
-                ]
-            },
+        "/api/v1/portail/offres/{id}": {
             "put": {
                 "tags": [
                     "Offres"
                 ],
-                "summary": "Mettre à jour une offre",
-                "operationId": "6fc392289d843c052ec55ebb0f622536",
+                "summary": "Mettre à jour une offre (portail agent)",
+                "operationId": "0cfffe82dce7794998b4963591c41392",
                 "parameters": [
                     {
                         "name": "id",
@@ -991,8 +1206,8 @@
                 "tags": [
                     "Offres"
                 ],
-                "summary": "Supprimer une offre",
-                "operationId": "a2d138005f287ee61e97ea164e3ef254",
+                "summary": "Supprimer une offre (portail agent)",
+                "operationId": "7e4422e98f39e693edb27125e558b886",
                 "parameters": [
                     {
                         "name": "id",
@@ -1023,80 +1238,6 @@
                         "bearerAuth": []
                     }
                 ]
-            }
-        },
-        "/api/offres/{id}/simulation-params": {
-            "get": {
-                "tags": [
-                    "Offres"
-                ],
-                "summary": "Paramètres pré-remplis pour le simulateur à partir d'une offre",
-                "operationId": "f47d761cbacff34474095b0d2aa95d70",
-                "parameters": [
-                    {
-                        "name": "id",
-                        "in": "path",
-                        "required": true,
-                        "schema": {
-                            "type": "string",
-                            "format": "uuid"
-                        }
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Paramètres de simulation",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "properties": {
-                                        "id_offre": {
-                                            "type": "string",
-                                            "format": "uuid"
-                                        },
-                                        "montant_min": {
-                                            "type": "integer",
-                                            "example": 50000
-                                        },
-                                        "montant_max": {
-                                            "type": "integer",
-                                            "example": 5000000
-                                        },
-                                        "duree_min_mois": {
-                                            "type": "integer",
-                                            "example": 3
-                                        },
-                                        "duree_max_mois": {
-                                            "type": "integer",
-                                            "example": 24
-                                        },
-                                        "taux_interet_mensuel": {
-                                            "type": "number",
-                                            "format": "float",
-                                            "example": 2.5
-                                        },
-                                        "frais_dossier": {
-                                            "type": "number",
-                                            "format": "float",
-                                            "example": 5000,
-                                            "nullable": true
-                                        },
-                                        "assurance": {
-                                            "type": "number",
-                                            "format": "float",
-                                            "example": 1000,
-                                            "nullable": true
-                                        }
-                                    },
-                                    "type": "object"
-                                }
-                            }
-                        }
-                    },
-                    "404": {
-                        "description": "Offre introuvable"
-                    }
-                }
             }
         },
         "/api/v1/portail/dashboard": {
@@ -1439,6 +1580,10 @@
     },
     "tags": [
         {
+            "name": "Admin Auth",
+            "description": "Admin Auth"
+        },
+        {
             "name": "Admin",
             "description": "Admin"
         },
@@ -1453,6 +1598,10 @@
         {
             "name": "Admin - Slider",
             "description": "Admin - Slider"
+        },
+        {
+            "name": "Portail Auth",
+            "description": "Portail Auth"
         },
         {
             "name": "Authentification",

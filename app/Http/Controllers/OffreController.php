@@ -12,8 +12,8 @@ use OpenApi\Attributes as OA;
 class OffreController extends Controller
 {
     #[OA\Get(
-        path: '/api/offres',
-        summary: 'Lister les offres (paginées)',
+        path: '/api/v1/offres',
+        summary: 'Lister les offres publiques (paginées)',
         security: [['bearerAuth' => []]],
         tags: ['Offres'],
         parameters: [
@@ -43,7 +43,7 @@ class OffreController extends Controller
     }
 
     #[OA\Get(
-        path: '/api/offres/{id}',
+        path: '/api/v1/offres/{id}',
         summary: 'Afficher une offre',
         security: [['bearerAuth' => []]],
         tags: ['Offres'],
@@ -68,7 +68,7 @@ class OffreController extends Controller
     }
 
     #[OA\Get(
-        path: '/api/offres/{id}/simulation-params',
+        path: '/api/v1/offres/{id}/simulation-params',
         summary: 'Paramètres pré-remplis pour le simulateur à partir d\'une offre',
         tags: ['Offres'],
         parameters: [
@@ -118,8 +118,8 @@ class OffreController extends Controller
     }
 
     #[OA\Post(
-        path: '/api/offres',
-        summary: 'Créer une nouvelle offre',
+        path: '/api/v1/portail/offres',
+        summary: 'Créer une nouvelle offre (portail agent)',
         security: [['bearerAuth' => []]],
         tags: ['Offres'],
         requestBody: new OA\RequestBody(
@@ -162,8 +162,8 @@ class OffreController extends Controller
     }
 
     #[OA\Put(
-        path: '/api/offres/{id}',
-        summary: 'Mettre à jour une offre',
+        path: '/api/v1/portail/offres/{id}',
+        summary: 'Mettre à jour une offre (portail agent)',
         security: [['bearerAuth' => []]],
         tags: ['Offres'],
         parameters: [
@@ -217,8 +217,8 @@ class OffreController extends Controller
     }
 
     #[OA\Delete(
-        path: '/api/offres/{id}',
-        summary: 'Supprimer une offre',
+        path: '/api/v1/portail/offres/{id}',
+        summary: 'Supprimer une offre (portail agent)',
         security: [['bearerAuth' => []]],
         tags: ['Offres'],
         parameters: [
