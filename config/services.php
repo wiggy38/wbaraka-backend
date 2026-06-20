@@ -41,4 +41,11 @@ return [
         'sender_id' => env('AFRICASTALKING_SENDER_ID', ''),
     ],
 
+    'jwt' => [
+        'admin_secret'   => env('JWT_ADMIN_SECRET'),
+        'admin_ttl'      => env('JWT_ADMIN_TTL', 60),
+        'portail_secret' => env('JWT_PORTAIL_SECRET'),
+        'portail_ttl'    => env('JWT_PORTAIL_TTL', 60),
+    ],
+
 ];

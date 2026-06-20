@@ -20,7 +20,7 @@ class AuthAdmin
         $payload = $this->decodeJwt($token);
 
         if (! $payload) {
-            return response()->json(['success' => false, 'message' => 'Token invalide ou expiré.'], 401);
+            return response()->json(['success' => false, 'message' => 'Token invalide ou expiré::.'], 401);
         }
 
         $admin = Admin::find($payload['sub']);
@@ -55,7 +55,8 @@ class AuthAdmin
 
         [$header64, $payload64, $sig64] = $parts;
 
-        $secret   = env('JWT_ADMIN_SECRET');
+        $secret   = config('services.jwt.admin_secret');
+
         $expected = $this->base64UrlEncode(
             hash_hmac('sha256', "$header64.$payload64", $secret, true)
         );

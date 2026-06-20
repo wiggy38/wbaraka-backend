@@ -74,8 +74,8 @@ class AdminAuthController extends Controller
 
     private function generateToken(Admin $admin): string
     {
-        $secret = env('JWT_ADMIN_SECRET');
-        $ttl    = (int) env('JWT_ADMIN_TTL', 60);
+        $secret = config('services.jwt.admin_secret');
+        $ttl    = (int) config('services.jwt.admin_ttl', 60);
 
         $now     = time();
         $header  = $this->base64UrlEncode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));

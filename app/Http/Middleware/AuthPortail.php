@@ -20,7 +20,7 @@ class AuthPortail
         $payload = $this->decodeJwt($token);
 
         if (! $payload) {
-            return response()->json(['success' => false, 'message' => 'Token invalide ou expiré.'], 401);
+            return response()->json(['success' => false, 'message' => 'Token invalide ou expiré.!!'], 401);
         }
 
         $agent = Agent::find($payload['sub']);
@@ -56,7 +56,7 @@ class AuthPortail
 
         [$header64, $payload64, $sig64] = $parts;
 
-        $secret   = env('JWT_PORTAIL_SECRET');
+        $secret   = config('services.jwt.portail_secret');
         $expected = $this->base64UrlEncode(
             hash_hmac('sha256', "$header64.$payload64", $secret, true)
         );

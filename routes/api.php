@@ -35,6 +35,7 @@ Route::prefix('v1')->group(function () {
 
     Route::middleware('auth.user')->group(function () {
         Route::get('users/me/simulations', [SimulationController::class, 'mySimulations']);
+        Route::put('auth/me/nom', [AuthController::class, 'updateNom']);
     });
 
     // --- Portail agent ---
@@ -59,6 +60,9 @@ Route::prefix('v1')->group(function () {
     Route::prefix('admin')->group(function () {
         Route::post('auth/login', [AdminAuthController::class, 'login']);
 
+        // Public — no token required
+        Route::get('slider', [AdminController::class, 'indexSlider']);
+
         Route::middleware('auth.admin')->group(function () {
             Route::get('dashboard', [AdminController::class, 'dashboard']);
 
@@ -78,10 +82,7 @@ Route::prefix('v1')->group(function () {
 
             Route::get('journal', [AdminController::class, 'indexJournal']);
 
-            Route::prefix('slider')->group(function () {
-                Route::get('/', [AdminController::class, 'indexSlider']);
-                Route::put('{id}', [AdminController::class, 'updateSlider']);
-            });
+            Route::put('slider/{id}', [AdminController::class, 'updateSlider']);
         });
     });
 });

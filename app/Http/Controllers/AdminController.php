@@ -419,7 +419,7 @@ class AdminController extends Controller
     {
         $admin = $request->attributes->get('admin');
 
-        if ($admin->role !== 'super_admin') {
+        if (!$admin || $admin->role !== 'super_admin') {
             return response()->json([
                 'success' => false,
                 'message' => 'Action réservée au super administrateur.',
@@ -466,7 +466,7 @@ class AdminController extends Controller
     {
         $admin = $request->attributes->get('admin');
 
-        if ($admin->role !== 'super_admin') {
+        if (!$admin || $admin->role !== 'super_admin') {
             return response()->json([
                 'success' => false,
                 'message' => 'Action réservée au super administrateur.',
@@ -506,14 +506,14 @@ class AdminController extends Controller
     )]
     public function indexSlider(Request $request): JsonResponse
     {
-        $admin = $request->attributes->get('admin');
+        //$admin = $request->attributes->get('admin');
 
-        if ($admin->role !== 'super_admin') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Action réservée au super administrateur.',
-            ], 403);
-        }
+        //if (!$admin || $admin->role !== 'super_admin') {
+        //    return response()->json([
+        //        'success' => false,
+        //        'message' => 'Action réservée au super administrateur.',
+        //    ], 403);
+        //}
 
         $slides = Slider::orderBy('ordre')->take(3)->get();
 
@@ -554,7 +554,7 @@ class AdminController extends Controller
     {
         $admin = $request->attributes->get('admin');
 
-        if ($admin->role !== 'super_admin') {
+        if (!$admin || $admin->role !== 'super_admin') {
             return response()->json([
                 'success' => false,
                 'message' => 'Action réservée au super administrateur.',

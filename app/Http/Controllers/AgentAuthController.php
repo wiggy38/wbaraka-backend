@@ -85,8 +85,8 @@ class AgentAuthController extends Controller
 
     private function generateToken(Agent $agent): string
     {
-        $secret = env('JWT_PORTAIL_SECRET');
-        $ttl    = (int) env('JWT_PORTAIL_TTL', 60); // minutes
+        $secret = config('services.jwt.portail_secret');
+        $ttl    = (int) config('services.jwt.portail_ttl', 60);
 
         $now     = time();
         $header  = $this->base64UrlEncode(json_encode(['alg' => 'HS256', 'typ' => 'JWT']));

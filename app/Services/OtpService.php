@@ -18,7 +18,11 @@ class OtpService
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
         $expiresAt = now()->addSeconds(self::TTL_SECONDS);
 
-        Redis::setex("otp:{$telephone}", self::TTL_SECONDS, $code);
+        try {
+            Redis::setex("otp:{$telephone}", self::TTL_SECONDS, $code);
+        } catch (\Throwable) {
+            // Redis unavailable — DB record is the fallback
+        }
 
         Otp::create([
             'telephone'  => $telephone,
@@ -32,13 +36,35 @@ class OtpService
 
     public function verify(string $telephone, string $code): bool
     {
-        $stored = Redis::get("otp:{$telephone}");
+        $stored = null;
 
-        if ($stored === null || $stored !== $code) {
-            return false;
+        try {
+            $stored = Redis::get("otp:{$telephone}");
+        } catch (\Throwable) {
+            // Redis unavailable — fall through to DB check
         }
 
-        Redis::del("otp:{$telephone}");
+        if ($stored !== null) {
+            if ($stored !== $code) {
+                return false;
+            }
+
+            try {
+                Redis::del("otp:{$telephone}");
+            } catch (\Throwable) {}
+        } else {
+            // Redis miss — verify against database
+            $otp = Otp::where('telephone', $telephone)
+                ->where('code', $code)
+                ->where('used', false)
+                ->where('expires_at', '>=', now())
+                ->latest('created_at')
+                ->first();
+
+            if (! $otp) {
+                return false;
+            }
+        }
 
         Otp::where('telephone', $telephone)
             ->where('code', $code)

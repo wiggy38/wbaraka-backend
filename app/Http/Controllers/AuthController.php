@@ -94,6 +94,50 @@ class AuthController extends Controller
             ),
         ]
     )]
+    #[OA\Put(
+        path: '/api/v1/auth/me/nom',
+        summary: "Mettre à jour le nom de l'utilisateur connecté",
+        security: [['bearerAuth' => []]],
+        tags: ['Authentification'],
+        requestBody: new OA\RequestBody(
+            required: true,
+            content: new OA\JsonContent(
+                required: ['nom'],
+                properties: [
+                    new OA\Property(property: 'nom', type: 'string', example: 'Amadou Koné'),
+                ]
+            )
+        ),
+        responses: [
+            new OA\Response(
+                response: 200,
+                description: 'Nom mis à jour avec succès',
+                content: new OA\JsonContent(
+                    properties: [
+                        new OA\Property(property: 'success', type: 'boolean', example: true),
+                        new OA\Property(property: 'data', type: 'object'),
+                    ]
+                )
+            ),
+            new OA\Response(response: 401, description: 'Non authentifié'),
+            new OA\Response(response: 422, description: 'Données invalides'),
+        ]
+    )]
+    public function updateNom(Request $request): JsonResponse
+    {
+        $request->validate([
+            'nom' => ['required', 'string', 'max:255'],
+        ]);
+
+        $user = JWTAuth::parseToken()->authenticate();
+        $user->update(['nom' => $request->nom]);
+
+        return response()->json([
+            'success' => true,
+            'data'    => $user,
+        ]);
+    }
+
     public function verifyOtp(Request $request): JsonResponse
     {
         $request->validate([

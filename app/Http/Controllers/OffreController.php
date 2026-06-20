@@ -37,7 +37,7 @@ class OffreController extends Controller
             $query->where('statut', $request->query('statut'));
         }
 
-        $offres = $query->paginate(20);
+        $offres = $query->with('imf')->paginate(20);
 
         return response()->json(['success' => true, 'data' => $offres]);
     }
